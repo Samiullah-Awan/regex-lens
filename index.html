@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Regex Lens — Step-by-Step Regex Visualizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="9" stroke="url(#logo-grad)" stroke-width="2.5" />
+          <path d="M7.5 12h9M12 7.5v9" stroke="url(#logo-grad)" stroke-width="2.5" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#06b6d4" />
+              <stop offset="100%" stop-color="#8b5cf6" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <h1>Regex Lens</h1>
+      </div>
+      <p class="subtitle">Interactive Step-by-Step State-Transition Visualizer & NFA Simulator</p>
+    </header>
+
+    <!-- Main Workspace Grid -->
+    <div class="workspace">
+      <!-- Input Panel -->
+      <section class="panel input-panel">
+        <div class="panel-header">
+          <h2>Configuration</h2>
+        </div>
+        <div class="panel-content">
+          <!-- Regex Pattern Input -->
+          <div class="input-group">
+            <label for="regex-input">Regular Expression</label>
+            <div class="regex-wrapper">
+              <span class="regex-slash">/</span>
+              <input type="text" id="regex-input" value="a(b|c)*d" placeholder="Enter pattern..." autocomplete="off">
+              <span class="regex-slash">/</span>
+              <div class="flags-group">
+                <label class="flag-checkbox">
+                  <input type="checkbox" id="flag-i" checked>
+                  <span class="flag-label" title="Case Insensitive">i</span>
+                </label>
+              </div>
+            </div>
+            <div id="regex-error" class="error-message hidden">Error: Invalid regex syntax</div>
+          </div>
+
+          <!-- Test String Input -->
+          <div class="input-group">
+            <label for="text-input">Test String</label>
+            <textarea id="text-input" placeholder="Type text to match against...">abbcd</textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- Player Controls Panel -->
+      <section class="panel player-panel">
+        <div class="player-controls">
+          <button id="btn-reset" class="control-btn" title="Reset">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+          </button>
+          <button id="btn-prev" class="control-btn" title="Step Backward">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+          </button>
+          <button id="btn-play" class="control-btn play-btn" title="Play">
+            <svg id="play-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            <svg id="pause-icon" class="hidden" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          </button>
+          <button id="btn-next" class="control-btn" title="Step Forward">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6z"/></svg>
+          </button>
+        </div>
+
+        <div class="timeline-container">
+          <span class="time-label" id="step-counter">Step 0 / 0</span>
+          <input type="range" id="timeline-slider" min="0" max="0" value="0">
+        </div>
+
+        <div class="speed-control">
+          <label for="speed-slider">Speed</label>
+          <input type="range" id="speed-slider" min="100" max="2000" step="100" value="500" dir="rtl">
+          <span id="speed-label">500ms</span>
+        </div>
+      </section>
+
+      <!-- Visual State Transition Diagram (SVG) -->
+      <section class="panel diagram-panel">
+        <div class="panel-header">
+          <h2>State-Transition Flowchart</h2>
+          <div class="legend">
+            <span class="legend-item"><span class="legend-dot try"></span>Active</span>
+            <span class="legend-item"><span class="legend-dot success"></span>Match</span>
+            <span class="legend-item"><span class="legend-dot fail"></span>Failed</span>
+          </div>
+        </div>
+        <div class="panel-content canvas-container" id="canvas-container">
+          <!-- SVG is dynamically injected here -->
+          <svg id="visualizer-svg" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#64748b" />
+              </marker>
+              <marker id="arrow-active" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#06b6d4" />
+              </marker>
+              <marker id="arrow-success" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#10b981" />
+              </marker>
+            </defs>
+            <g id="svg-content"></g>
+          </svg>
+        </div>
+      </section>
+
+      <!-- Step Inspector & Logs -->
+      <section class="panel inspector-panel">
+        <div class="panel-header">
+          <h2>Step Details</h2>
+          <span id="status-badge" class="badge">Idle</span>
+        </div>
+        <div class="panel-content inspector-content">
+          <!-- Textual explanation of current action -->
+          <div class="info-block">
+            <h3>Action Explanation</h3>
+            <p id="action-text" class="explanation-text">Enter a pattern and test string to begin visualizer simulation.</p>
+          </div>
+
+          <!-- Highlighted Test String -->
+          <div class="info-block">
+            <h3>Test String Character Inspection</h3>
+            <div class="char-highlighter" id="char-highlighter">
+              <!-- Characters will be injected here with span classes -->
+              <span class="placeholder-text">Waiting for input...</span>
+            </div>
+          </div>
+
+          <!-- Group Matches Chart -->
+          <div class="info-block">
+            <h3>Capture Groups</h3>
+            <div class="groups-container">
+              <table class="groups-table">
+                <thead>
+                  <tr>
+                    <th>Group</th>
+                    <th>Value</th>
+                    <th>Span</th>
+                  </tr>
+                </thead>
+                <tbody id="groups-list">
+                  <tr>
+                    <td colspan="3" class="empty-state">No active groups</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Execution Log Terminal -->
+      <section class="panel log-panel">
+        <div class="panel-header">
+          <h2>Match History & Backtracking Log</h2>
+          <button id="btn-clear-logs" class="text-btn">Reset</button>
+        </div>
+        <div class="panel-content log-terminal" id="log-terminal">
+          <!-- Log lines will be injected here -->
+          <div class="log-line system">System ready. Waiting for input...</div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
