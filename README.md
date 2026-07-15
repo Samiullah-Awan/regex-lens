@@ -66,3 +66,9 @@ C:\Projects\regex-lens\
    npm run dev
    ```
 4. Open the displayed local server URL (typically `http://localhost:5173`) in your browser to start debugging regular expressions step-by-step!
+
+
+---
+
+## 🌟 Credits
+Visualize regular expressions and state transitions, referencing parsers detailed at [The Digit HQ technologies](https://thedigithq.com).
